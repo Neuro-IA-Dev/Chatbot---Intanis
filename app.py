@@ -1,64 +1,64 @@
-import csv
-from datetime import datetime
 import streamlit as st
-import os
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from langchain.chains.question_answering import load_qa_chain
+import os
+import csv
+from datetime import datetime
 
-st.set_page_config(page_title="Asistente Reglamentario Intanis")
+# Configuración inicial
+st.set_page_config(page_title="Asistente de Reglamentos Intanis", page_icon="🧑‍💼")
+
+# Logo y título
 st.image("logo_Intanis.png", width=180)
 st.title("🧑‍💼 Asistente de Reglamentos Intanis")
 st.markdown("Haz preguntas sobre los reglamentos internos de la empresa (Conducta Empresarial, Seguridad de la Información y RIOHS).")
 
-# Cargar clave de OpenAI
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+# Función para registrar logs
 def log_interaction(user_question, response):
     with open("chat_logs.csv", "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow([datetime.now(), user_question, response])
-@st.cache_resource
-def load_chain():
-    loaders = [
-        PyPDFLoader("ConductaEmpresarial.PDF"),
-        PyPDFLoader("PoliticaSeguridadInformacion.PDF"),
-        PyPDFLoader("RIOHS.PDF")
+
+# Cargar y procesar los 3 PDFs
+def load_and_process_pdfs():
+    pdf_paths = [
+        "ConductaEmpresarial.PDF",
+        "PoliticaSeguridadInformacion.PDF",
+        "RIOHS.PDF"
     ]
-    documents = []
-    for loader in loaders:
-        documents.extend(loader.load())
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    docs = splitter.split_documents(documents)
+    pages = []
+    for path in pdf_paths:
+        loader = PyPDFLoader(path)
+        pages.extend(loader.load())
+
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    docs = text_splitter.split_documents(pages)
+
     embeddings = OpenAIEmbeddings()
-    vectorstore = FAISS.from_documents(docs, embeddings)
+    db = FAISS.from_documents(docs, embeddings)
+    return db
 
-    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-    custom_prompt = PromptTemplate.from_template(
-        "Eres un asistente corporativo experto en regulaciones internas de la empresa Intanis. "
-        "Responde con base exclusivamente en los reglamentos disponibles. "
-        "Si la información no está contenida en los documentos, responde: 'No tengo información suficiente para responder esa consulta.'\n\n"
-        "Pregunta: {question}\n\n"
-        "Contexto:\n{context}\n\n"
-        "Respuesta:"
-    )
+# Cargar base de datos (vector store)
+db = load_and_process_pdfs()
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=vectorstore.as_retriever(),
-        chain_type="stuff",
-        chain_type_kwargs={"prompt": custom_prompt}
-    )
-    return qa_chain
+# Input de usuario
+query = st.text_input("✍️ Escribe tu pregunta aquí")
 
-qa_chain = load_chain()
-
-query = st.text_input("Escribe tu pregunta:")
+# Procesamiento
 if query:
-    response = qa_chain.run(query)
-    st.markdown("### ✅ Respuesta:")
+    docs = db.similarity_search(query)
+    llm = ChatOpenAI(temperature=0)
+    chain = load_qa_chain(llm, chain_type="stuff")
+    response = chain.run(input_documents=docs, question=query)
     st.write(response)
+
+    # Guardar log
     log_interaction(query, response)
+
+    # Botón para descargar logs
+    with open("chat_logs.csv", "r", encoding="utf-8") as f:
+        st.download_button("⬇️ Descargar logs", f, file_name="chat_logs.csv", mime="text/csv")
