@@ -9,7 +9,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 st.set_page_config(page_title="Asistente Reglamentario Intanis")
-st.image("logo_intanis.png", width=180)
+st.image("b3ad2275-5dba-4d6d-9670-07ef58f725a0.png", width=180)
 st.title("🧑‍💼 Asistente de Reglamentos Intanis")
 st.markdown("Haz preguntas sobre los reglamentos internos de la empresa (Conducta Empresarial, Seguridad de la Información y RIOHS).")
 
