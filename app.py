@@ -61,4 +61,4 @@ if query:
     response = qa_chain.run(query)
     st.markdown("### ✅ Respuesta:")
     st.write(response)
-     log_interaction(query, response)
+    log_interaction(query, response)
