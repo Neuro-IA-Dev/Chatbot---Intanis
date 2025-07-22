@@ -1,3 +1,5 @@
+import csv
+from datetime import datetime
 import streamlit as st
 import os
 from langchain_community.document_loaders import PyPDFLoader
@@ -15,7 +17,10 @@ st.markdown("Haz preguntas sobre los reglamentos internos de la empresa (Conduct
 
 # Cargar clave de OpenAI
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-
+def log_interaction(user_question, response):
+    with open("chat_logs.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([datetime.now(), user_question, response])
 @st.cache_resource
 def load_chain():
     loaders = [
@@ -56,3 +61,4 @@ if query:
     response = qa_chain.run(query)
     st.markdown("### ✅ Respuesta:")
     st.write(response)
+     log_interaction(query, response)
