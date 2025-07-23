@@ -1,60 +1,54 @@
-import os
 import streamlit as st
-from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import ChatOpenAI
-from langchain.chains.question_answering import load_qa_chain
+from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-import pandas as pd
+from langchain.chat_models import ChatOpenAI
+from langchain.chains.question_answering import load_qa_chain
+import os
+import csv
+from datetime import datetime
 
-# Cargar variables de entorno
-load_dotenv()
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+# Configuración inicial
+st.set_page_config(page_title="Asistente de Reglamentos Intanis", page_icon="🧑‍💼")
 
-# ---------- CONFIGURACIÓN ----------
-st.set_page_config(page_title="Asistente Intanis", layout="wide")
+# Logo y título
 st.image("logo_Intanis.png", width=180)
 st.title("🧑‍💼 Asistente de Reglamentos Intanis")
 st.markdown("Haz preguntas sobre los reglamentos internos de la empresa (Conducta Empresarial, Seguridad de la Información y RIOHS).")
 
-# ---------- CARGA DE DOCUMENTOS ----------
-def cargar_documentos():
-    rutas = [
+# Función para registrar logs
+def log_interaction(user_question, response):
+    with open("chat_logs.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([datetime.now(), user_question, response])
+
+# Cargar y procesar los 3 PDFs
+def load_and_process_pdfs():
+    pdf_paths = [
         "ConductaEmpresarial.PDF",
         "PoliticaSeguridadInformacion.PDF",
         "RIOHS.PDF"
     ]
-    documentos = []
-    for ruta in rutas:
-        loader = PyPDFLoader(ruta)
-        documentos.extend(loader.load())
-    return documentos
+    pages = []
+    for path in pdf_paths:
+        loader = PyPDFLoader(path)
+        pages.extend(loader.load())
 
-# ---------- PROCESAMIENTO ----------
-def construir_cadena(documentos):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    docs = splitter.split_documents(documentos)
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    docs = text_splitter.split_documents(pages)
 
-    vectores = FAISS.from_documents(docs, OpenAIEmbeddings())
-    return vectores, docs
+    embeddings = OpenAIEmbeddings()
+    db = FAISS.from_documents(docs, embeddings)
+    return db
 
-# ---------- FUNCIONES DE LOG ----------
-def log_interaction(query, response):
-    log_path = "chat_logs.csv"
-    nueva_fila = {"Pregunta": query, "Respuesta": response}
+# Cargar base de datos (vector store)
+db = load_and_process_pdfs()
+# Input de usuario
+query = st.text_input("✍️ Escribe tu pregunta aquí")
 
-    if os.path.exists(log_path):
-        df = pd.read_csv(log_path)
-        df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
-    else:
-        df = pd.DataFrame([nueva_fila])
-
-    df.to_csv(log_path, index=False)
-
-# ---------- BOTÓN DE DESCARGA DE FORMULARIO ----------
-def mostrar_descarga_formulario():
+if "formulario de vacaciones" in query.lower():
+    st.write("Aquí tienes el formulario de vacaciones:")
     with open("formulario_vacaciones.docx", "rb") as f:
         st.download_button(
             label="📄 Descargar Formulario de Vacaciones",
@@ -62,28 +56,55 @@ def mostrar_descarga_formulario():
             file_name="formulario_vacaciones.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
+    # Y evitar seguir procesando
+    log_interaction(query, "Formulario entregado.")
+    st.stop()
 
-# ---------- EJECUCIÓN ----------
-documentos = cargar_documentos()
-vectores, docs = construir_cadena(documentos)
 
-# Modelo LLM
-llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
-cadena = load_qa_chain(llm, chain_type="stuff")
-
-# ---------- ENTRADA DE USUARIO ----------
-query = st.text_input("📥 Escribe tu pregunta aquí:")
-
+# Procesamiento
 if query:
+    docs = db.similarity_search(query)
+    llm = ChatOpenAI(temperature=0)
+    chain = load_qa_chain(llm, chain_type="stuff")
+    response = chain.run(input_documents=docs, question=query)
+    st.write(response)
     if "formulario de vacaciones" in query.lower():
-        st.success("Aquí tienes el formulario que solicitaste:")
-        mostrar_descarga_formulario()
+        st.info("Puedes descargar el formulario de vacaciones aquí:")
+        with open("formulario_vacaciones.docx", "rb") as f:
+            st.download_button(
+                label="📄 Descargar Formulario",
+                data=f,
+                file_name="formulario_vacaciones.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
     else:
-        documentos_similares = vectores.similarity_search(query)
-        respuesta = cadena.run(input_documents=documentos_similares, question=query)
+        result = qa({"query": query})
+        response = result["result"]
+        source_docs = result.get("source_documents", [])
 
-        st.write("✅", respuesta)
-        st.write("📌 Fuente:", documentos_similares[0].metadata["source"])
+    # Guardar log
+    log_interaction(query, response)
+        st.markdown(f"**🧠 Respuesta:** {response}")
 
-        log_interaction(query, respuesta)
+        if source_docs:
+            st.markdown("📄 **Fuente(s):**")
+            for i, doc in enumerate(source_docs):
+                fuente = doc.metadata.get("source", "desconocida")
+                st.write(f"{i+1}. {fuente}")
 
+        log_interaction(query, response)
+
+    # Botón para descargar logs
+    with open("chat_logs.csv", "r", encoding="utf-8") as f:
+        st.download_button("⬇️ Descargar logs", f, file_name="chat_logs.csv", mime="text/csv")
+keywords = ["formulario", "vacaciones", "permiso", "licencia", "descanso"]
+
+if any(word in query.lower() for word in keywords):
+    st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
+    with open("formulario_vacaciones.docx", "rb") as f:
+        st.download_button(
+            label="⬇️ Descargar Formulario de Permiso (Word)",
+            data=f,
+            file_name="formulario_vacaciones.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
