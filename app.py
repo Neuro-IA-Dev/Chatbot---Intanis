@@ -58,7 +58,10 @@ if query:
         st.stop()
 
     # Realizar búsqueda y generar respuesta
-    result = qa.invoke(query)
+    result = qa.invoke({
+    "input_documents": docs,
+    "question": query
+})
     response = result["result"]
     source_docs = result.get("source_documents", [])
 
