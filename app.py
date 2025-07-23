@@ -99,11 +99,4 @@ if query:
         log_interaction(query, response)
 
 
-# Mostrar botón para descargar logs siempre al final
-with open("chat_logs.csv", "r", encoding="utf-8") as f:
-    st.download_button(
-        label="⬇️ Descargar logs",
-        data=f,
-        file_name="chat_logs.csv",
-        mime="text/csv"
-    )
+
