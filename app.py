@@ -65,7 +65,8 @@ if query:
     result = qa.invoke({"input_documents": docs, "question": query})
     response = result["output_text"]
     source_docs = result.get("source_documents", [])
-
+# Mostrar pregunta
+    st.markdown(f"📝 **Pregunta:** {query}")
     st.markdown(f"**💭 Respuesta:** {response}")
 
     if source_docs:
@@ -76,8 +77,11 @@ if query:
 
     log_interaction(query, response)
 
-# Botón para descargar logs
+# Botón para descargar logs al final
 with open("chat_logs.csv", "r", encoding="utf-8") as f:
     st.download_button(
-        "📄 Descargar logs", f, file_name="chat_logs.csv", mime="text/csv"
+        label="⬇️ Descargar logs",
+        data=f,
+        file_name="chat_logs.csv",
+        mime="text/csv"
     )
