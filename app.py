@@ -78,9 +78,8 @@ if query:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
     else:
-        result = qa({"query": query})
-        response = result["result"]
-        source_docs = result.get("source_documents", [])
+        response = chain.run(input_documents=docs, question=query)
+        source_docs = docs
 
     # Guardar log
         log_interaction(query, response)
