@@ -13,7 +13,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 # Título e interfaz
 st.image("logo_Intanis.png", width=180)
-st.title("👨\u200d💼 Asistente de Reglamentos Intanis")
+st.title("👨‍💼 Asistente de Reglamentos Intanis")
 st.markdown("Haz preguntas sobre los reglamentos internos de la empresa (Conducta Empresarial, Seguridad de la Información y RIOHS).")
 
 # Cargar y procesar documentos
@@ -38,23 +38,20 @@ db = FAISS.from_documents(all_chunks, embeddings)
 llm = ChatOpenAI(temperature=0)
 qa = load_qa_chain(llm, chain_type="stuff")
 
-# Funciones para logs
+# Función para guardar logs
 def log_interaction(query, response):
     with open("chat_logs.csv", "a", newline="", encoding="utf-8") as logfile:
         writer = csv.writer(logfile)
         writer.writerow([query, response])
 
-# Campo de entrada de usuario
+# Entrada del usuario
 query = st.chat_input("🌟 Escribe tu pregunta aquí")
-# Botón para descargar logs al final
-with open("chat_logs.csv", "r", encoding="utf-8") as f:
-    st.download_button(
-        label="⬇️ Descargar logs",
-        data=f,
-        file_name="chat_logs.csv",
-        mime="text/csv"
-    )
+
 if query:
+    # Mostrar la pregunta del usuario
+    st.markdown(f"📝 **Pregunta:** {query}")
+
+    # Si es una solicitud de formulario
     if any(word in query.lower() for word in ["formulario", "vacaciones", "permiso", "licencia", "descanso"]):
         st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
         with open("formulario_vacaciones.docx", "rb") as f:
@@ -65,23 +62,29 @@ if query:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
         log_interaction(query, "Formulario entregado.")
-        st.stop()
+    
+    else:
+        # Procesamiento normal de consulta
+        docs = db.similarity_search(query)
+        result = qa.invoke({"input_documents": docs, "question": query})
+        response = result["output_text"]
+        source_docs = result.get("source_documents", [])
 
-    # Procesamiento de pregunta normal
-    docs = db.similarity_search(query)
-    result = qa.invoke({"input_documents": docs, "question": query})
-    response = result["output_text"]
-    source_docs = result.get("source_documents", [])
-# Mostrar pregunta
-    st.markdown(f"📝 **Pregunta:** {query}")
-    st.markdown(f"**💭 Respuesta:** {response}")
+        st.markdown(f"**💭 Respuesta:** {response}")
 
-    if source_docs:
-        st.markdown("\n📄 **Fuente(s):**")
-        for i, doc in enumerate(source_docs):
-            fuente = doc.metadata.get("source", "desconocida")
-            st.write(f"{i+1}. {fuente}")
+        if source_docs:
+            st.markdown("\n📄 **Fuente(s):**")
+            for i, doc in enumerate(source_docs):
+                fuente = doc.metadata.get("source", "desconocida")
+                st.write(f"{i+1}. {fuente}")
 
-    log_interaction(query, response)
+        log_interaction(query, response)
 
-
+# Mostrar botón para descargar logs siempre al final
+with open("chat_logs.csv", "r", encoding="utf-8") as f:
+    st.download_button(
+        label="⬇️ Descargar logs",
+        data=f,
+        file_name="chat_logs.csv",
+        mime="text/csv"
+    )
