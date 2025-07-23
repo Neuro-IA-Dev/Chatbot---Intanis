@@ -44,6 +44,9 @@ def load_and_process_pdfs():
 
 # Cargar base de datos (vector store)
 db = load_and_process_pdfs()
+# Input de usuario
+query = st.text_input("✍️ Escribe tu pregunta aquí")
+
 if "formulario de vacaciones" in query.lower():
     st.write("Aquí tienes el formulario de vacaciones:")
     with open("formulario_vacaciones.docx", "rb") as f:
@@ -56,8 +59,7 @@ if "formulario de vacaciones" in query.lower():
     # Y evitar seguir procesando
     log_interaction(query, "Formulario entregado.")
     st.stop()
-# Input de usuario
-query = st.text_input("✍️ Escribe tu pregunta aquí")
+
 
 # Procesamiento
 if query:
