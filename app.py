@@ -54,7 +54,10 @@ if query:
     # Mostrar la pregunta del usuario
     st.markdown(f"📝 **Pregunta:** {query}")
 
-    if user_input == "necesito descargar los logs":
+    # Palabras clave para logs
+    log_keywords = ["log", "logs", "historial", "registro", "registros", "descargar logs", "obtener logs"]
+
+    if any(word in user_input for word in log_keywords):
         try:
             with open("chat_logs.csv", "r", encoding="utf-8") as f:
                 st.download_button(
