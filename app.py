@@ -48,11 +48,28 @@ def log_interaction(query, response):
 query = st.chat_input("🌟 Escribe tu pregunta aquí")
 
 if query:
+    # Normalizar texto
+    user_input = query.strip().lower()
+
     # Mostrar la pregunta del usuario
     st.markdown(f"📝 **Pregunta:** {query}")
 
+    if user_input == "necesito descargar los logs":
+        try:
+            with open("chat_logs.csv", "r", encoding="utf-8") as f:
+                st.download_button(
+                    label="⬇️ Descargar logs",
+                    data=f,
+                    file_name="chat_logs.csv",
+                    mime="text/csv"
+                )
+            log_interaction(query, "Se entregó el archivo de logs.")
+        except FileNotFoundError:
+            st.error("No hay logs disponibles aún.")
+        st.stop()
+
     # Si es una solicitud de formulario
-    if any(word in query.lower() for word in ["formulario", "vacaciones", "permiso", "licencia", "descanso"]):
+    elif any(word in user_input for word in ["formulario", "vacaciones", "permiso", "licencia", "descanso"]):
         st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
         with open("formulario_vacaciones.docx", "rb") as f:
             st.download_button(
@@ -62,9 +79,10 @@ if query:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
         log_interaction(query, "Formulario entregado.")
-    
+        st.stop()
+
+    # Procesamiento normal
     else:
-        # Procesamiento normal de consulta
         docs = db.similarity_search(query)
         result = qa.invoke({"input_documents": docs, "question": query})
         response = result["output_text"]
@@ -79,6 +97,7 @@ if query:
                 st.write(f"{i+1}. {fuente}")
 
         log_interaction(query, response)
+
 
 # Mostrar botón para descargar logs siempre al final
 with open("chat_logs.csv", "r", encoding="utf-8") as f:
