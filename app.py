@@ -47,17 +47,18 @@ db = load_and_process_pdfs()
 # Input de usuario
 query = st.text_input("✍️ Escribe tu pregunta aquí")
 
-if "formulario de vacaciones" in query.lower():
-    st.write("Aquí tienes el formulario de vacaciones:")
+if "formulario" in query.lower():
+    st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
     with open("formulario_vacaciones.docx", "rb") as f:
         st.download_button(
-            label="📄 Descargar Formulario de Vacaciones",
+            label="📄 Descargar Formulario de Permiso (Word)",
             data=f,
             file_name="formulario_vacaciones.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
-    # Y evitar seguir procesando
+    # Log de interacción
     log_interaction(query, "Formulario entregado.")
+    # Detiene el resto del procesamiento
     st.stop()
 
 
