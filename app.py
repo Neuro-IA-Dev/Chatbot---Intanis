@@ -69,7 +69,6 @@ if query:
     response = chain.run(input_documents=docs, question=query)
     st.write(response)
 
-
     # Guardar log
     log_interaction(query, response)
 
