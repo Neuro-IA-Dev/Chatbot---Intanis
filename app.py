@@ -60,7 +60,15 @@ if "formulario de vacaciones" in query.lower():
     log_interaction(query, "Formulario entregado.")
     st.stop()
 
-
+if any(word in query.lower() for word in keywords):
+    st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
+    with open("formulario_vacaciones.docx", "rb") as f:
+        st.download_button(
+            label="⬇️ Descargar Formulario de Permiso (Word)",
+            data=f,
+            file_name="formulario_vacaciones.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 # Procesamiento
 if query:
     docs = db.similarity_search(query)
@@ -76,12 +84,4 @@ if query:
         st.download_button("⬇️ Descargar logs", f, file_name="chat_logs.csv", mime="text/csv")
 keywords = ["formulario", "vacaciones", "permiso", "licencia", "descanso"]
 
-if any(word in query.lower() for word in keywords):
-    st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
-    with open("formulario_vacaciones.docx", "rb") as f:
-        st.download_button(
-            label="⬇️ Descargar Formulario de Permiso (Word)",
-            data=f,
-            file_name="formulario_vacaciones.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+
