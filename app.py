@@ -77,9 +77,7 @@ if query:
                 file_name="formulario_vacaciones.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
-    else:
-        response = chain.run(input_documents=docs, question=query)
-        source_docs = docs
+  
 
     # Guardar log
         log_interaction(query, response)
