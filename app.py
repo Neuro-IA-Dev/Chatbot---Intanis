@@ -68,6 +68,7 @@ if query:
     chain = load_qa_chain(llm, chain_type="stuff")
     response = chain.run(input_documents=docs, question=query)
     st.write(response)
+    st.write(f"📖 Fuente: {doc.metadata['source']}")
 
     # Guardar log
     log_interaction(query, response)
