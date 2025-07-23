@@ -46,7 +46,14 @@ def log_interaction(query, response):
 
 # Campo de entrada de usuario
 query = st.chat_input("🌟 Escribe tu pregunta aquí")
-
+# Botón para descargar logs al final
+with open("chat_logs.csv", "r", encoding="utf-8") as f:
+    st.download_button(
+        label="⬇️ Descargar logs",
+        data=f,
+        file_name="chat_logs.csv",
+        mime="text/csv"
+    )
 if query:
     if any(word in query.lower() for word in ["formulario", "vacaciones", "permiso", "licencia", "descanso"]):
         st.success("Puedes descargar el formulario de vacaciones o permisos laborales aquí:")
@@ -77,11 +84,4 @@ if query:
 
     log_interaction(query, response)
 
-# Botón para descargar logs al final
-with open("chat_logs.csv", "r", encoding="utf-8") as f:
-    st.download_button(
-        label="⬇️ Descargar logs",
-        data=f,
-        file_name="chat_logs.csv",
-        mime="text/csv"
-    )
+
