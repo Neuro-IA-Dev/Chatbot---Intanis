@@ -83,7 +83,7 @@ if query:
         source_docs = result.get("source_documents", [])
 
     # Guardar log
-    log_interaction(query, response)
+        log_interaction(query, response)
         st.markdown(f"**🧠 Respuesta:** {response}")
 
         if source_docs:
