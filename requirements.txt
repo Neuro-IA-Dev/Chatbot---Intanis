@@ -1,7 +1,22 @@
-streamlit
-openai
-langchain
-langchain-community
-faiss-cpu
-tiktoken
+# Núcleo de LangChain
+langchain>=0.1.0
+
+# Conector para modelos OpenAI
+langchain-openai>=0.0.5
+
+# Cliente oficial de OpenAI
+openai>=1.0.0
+
+# Cargadores de documentos, PDF y otros
 pypdf
+python-docx
+tiktoken
+
+# Vectorstore en memoria
+faiss-cpu
+
+# App web
+streamlit
+
+# Otros
+python-dotenv
