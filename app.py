@@ -63,14 +63,29 @@ if "formulario de vacaciones" in query.lower():
 
 # Procesamiento
 if query:
-    docs = db.similarity_search(query)
-    llm = ChatOpenAI(temperature=0)
-    chain = load_qa_chain(llm, chain_type="stuff")
-    response = chain.run(input_documents=docs, question=query)
-    st.write(response)
+    if "formulario de vacaciones" in query.lower():
+        st.info("Puedes descargar el formulario de vacaciones aquí:")
+        with open("formulario_vacaciones.docx", "rb") as f:
+            st.download_button(
+                label="📄 Descargar Formulario",
+                data=f,
+                file_name="formulario_vacaciones.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+    else:
+        result = qa({"query": query})
+        response = result["result"]
+        source_docs = result.get("source_documents", [])
 
-    # Guardar log
-    log_interaction(query, response)
+        st.markdown(f"**🧠 Respuesta:** {response}")
+
+        if source_docs:
+            st.markdown("📄 **Fuente(s):**")
+            for i, doc in enumerate(source_docs):
+                fuente = doc.metadata.get("source", "desconocida")
+                st.write(f"{i+1}. {fuente}")
+
+        log_interaction(query, response)
 
     # Botón para descargar logs
     with open("chat_logs.csv", "r", encoding="utf-8") as f:
