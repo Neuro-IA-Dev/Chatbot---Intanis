@@ -92,7 +92,7 @@ if query:
                 fuente = doc.metadata.get("source", "desconocida")
                 st.write(f"{i+1}. {fuente}")
 
-        log_interaction(query, response)
+   
 
     # Botón para descargar logs
     with open("chat_logs.csv", "r", encoding="utf-8") as f:
